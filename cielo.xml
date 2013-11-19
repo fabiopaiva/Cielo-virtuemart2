@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<install version="1.5" type="plugin" group="vmpayment" >
+    <name>cielo</name>
+    <creationDate>November 05 2013</creationDate>
+    <author>Fábio Paiva</author>
+    <authorUrl>http://www.fabiopaiva.me</authorUrl>
+    <license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
+    <version>1.0.2</version>
+    <description>Pagamento via Cielo</description>
+    <files>
+        <filename plugin="cielo">cielo.php</filename>
+    </files>
+    <params addpath="/administrator/components/com_virtuemart/elements">
+        <param type="vmjpluginwarning"/>
+        <param name="payment_logos" type="vmfiles" label="VMPAYMENT_STANDARD_LOGOS" description="VMPAYMENT_STANDARD_LOGOS_DESC" directory="/images/stories/virtuemart/payment" default="default" hide_default="1" hide_none="1" stripext="0" exclude="^_"/>
+        <param name="NomeLoja" type="text" size="20" label="Nome da loja" description="Razão social de sua loja"/>        
+        <param name="Codigo" type="text" size="20" label="Código Cielo" description="Seu código de filiação na Cielo (fornecido por Cielo)"/>
+        <param name="Chave" type="text" size="20" label="Chave de identificação Cielo" description="Sua chave de identificação na Cielo (fornecido por Cielo)"/>
+        <param name="TipoParcelamento" type="list" default="2" label="Parcelamento" description="Somente parcelado loja implementado">
+            <option value="3" disabled="true">Parcelado Administradora</option>
+            <option value="2" selected="selected">Parcelado Loja</option>
+            <option value="1" disabled="true">Crédito a vista</option>
+            <option value="A" disabled="true">Débito</option>
+        </param>
+        <param name="Parcelas" type="list" default="1" label="Quantidade máxima de parcelas" description="O cliente pode parcelar até quantas vezes">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+            <option value="17">17</option>
+            <option value="18">18</option>
+        </param>
+        <param name="Captura" type="list" default="1" label="Capturar automaticamente a transação?" description="Somente captura automática implementado">
+            <option value="1">Sim</option>
+            <option disabled="true" value="0">Não</option>
+        </param>
+        <param name="Autorizar" type="list" default="3" label="Autorização" description="Somente Autorizar sem passar por autenticação implementado">
+            <option value="3" selected="selected">Autorizar sem passar por autenticação – válido somente para crédito</option>
+            <option value="2">Autorizar autenticada e não-autenticada</option>
+            <option value="1">Autorizar somente se autenticada</option>
+            <option value="0">Não autorizar</option>
+        </param>
+        <param name="StatusAutorizado" type="vmorderstate" default="C" label="Status autorizado" description="Status do pedido se o pagamento for autorizado pela Cielo"/>
+        <param name="StatusNaoAutorizado" type="vmorderstate" default="X" label="Status não autorizado" description="Status do pedido se o pagamento NÃO for autorizado pela Cielo"/>
+        <param name="Ambiente" type="list" default="0" label="Ambiente de execução" description="Coloque em produção quando estiver tudo testado em sua loja">
+            <option value="1">Produção</option>
+            <option selected="selected" value="0">Teste</option>
+        </param>
+        <param type="spacer" default="&lt;br/&gt;&lt;a target='_blank' href='https://pagseguro.uol.com.br/security/webpagamentos/webdoacao.aspx?email_cobranca=fabio@paiva.info&amp;moeda=BRL'&gt;&lt;img src='https://pagseguro.uol.com.br/Security/Imagens/FacaSuaDoacao.gif' /&gt;&lt;/a&gt;" level="level4"/>
+    </params>
+</install>
