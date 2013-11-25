@@ -9,6 +9,48 @@ class plgVmPaymentCielo extends vmPSPlugin {
 
     // instance of class
     public static $_this = false;
+    private $status = array(
+        0 => 'Transação criada',
+        1 => 'Transação em Andamento',
+        2 => 'Transação Autenticada',
+        3 => 'Transação não Autenticada',
+        4 => 'Transação Autorizada',
+        5 => 'Transação não Autorizada',
+        6 => 'Transação Capturada',
+        9 => 'Transação Cancelada',
+        10 => 'Transação em Autenticação',
+        12 => 'Transação em Cancelamento'
+    );
+    
+    private $lr = array(
+        '00' => 'Transação autorizada',
+        '01' => 'Transação referida pelo emissor',
+        '04' => 'Cartão com restrição',
+        '05' => 'Transação não autorizada',
+        '06' => 'Tente novamente',
+        '07' => 'Cartão com restrição',
+        '12' => 'Transação inválida',
+        '13' => 'Valor inválido (Verifique valor mínimo de R$5,00 para parcelamento)',
+        '14' => 'Cartão inválido',
+        '15' => 'Emissor inválido',
+        '41' => 'Cartão com restrição',
+        '51' => 'Saldo insuficiente',
+        '54' => 'Cartão vencido',
+        '57' => 'Transação não permitida',
+        '58' => 'Transação não permitida',
+        '62' => 'Cartão com restrição',
+        '63' => 'Cartão com restrição',
+        '76' => 'Tente novamente',
+        '78' => 'Cartão não foi desbloqueado pelo portador',
+        '82' => 'Transação inválida',
+        '91' => 'Banco indisponível',
+        '96' => 'Tente novamente',
+        'AA' => 'Tente novamente',
+        'AC' => 'Cartão de débito tentando utilizar produto crédito',
+        'GA' => 'Transação referida pela Cielo (Aguarde contato da Cielo)',
+        'N7' => 'Código de segurança inválido (Visa)'
+        
+    );
 
     function __construct(& $subject, $config) {
         //if (self::$_this)
@@ -186,7 +228,7 @@ class plgVmPaymentCielo extends vmPSPlugin {
         return $this->processConfirmedOrderPaymentResponse(2, $cart, $order, $html);
 // 		return true;  // empty cart, send order
     }
-    
+
     private function getUrlAutenticacao($order, $useSSL = false) {
         $method = $this->getPluginParams();
         $session = JFactory::getSession();
@@ -249,7 +291,7 @@ class plgVmPaymentCielo extends vmPSPlugin {
             'url_autenticacao' => $xml_array["url-autenticacao"],
         );
         $this->storePSPluginInternalData($data);
-     
+
         return $xml_array["url-autenticacao"];
     }
 
@@ -272,10 +314,63 @@ class plgVmPaymentCielo extends vmPSPlugin {
         }
         $this->getPaymentCurrency($paymentTable);
 
+        $params = $this->getPluginParams();
+        $tid = $paymentTable->tid;
+        $xml = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>
+<requisicao-consulta id=\"5\" versao=\"1.1.1\">
+<tid>{$tid}</tid>
+<dados-ec>
+<numero>{$params->Codigo}</numero>
+<chave>{$params->Chave}</chave>
+</dados-ec>
+</requisicao-consulta>";
+        $info = $this->curl_xml($xml);
         $html = '<table class="adminlist">' . "\n";
         $html .=$this->getHtmlHeaderBE();
         $html .= $this->getHtmlRowBE('STANDARD_PAYMENT_NAME', $paymentTable->payment_name);
-        $html .= $this->getHtmlRowBE('STANDARD_PAYMENT_TOTAL_CURRENCY', $paymentTable->payment_order_total . ' ' . $paymentTable->payment_currency);
+        $html .= $this->getHtmlRowBE('STANDARD_PAYMENT_TOTAL_CURRENCY', 'R$ ' . number_format($paymentTable->payment_order_total, 2, ",", "."));
+        $html .= "<tr><td>Status do pagamento:</td><td> <b> " . $this->status[$info['status']] . "</b></td></tr>";
+        $html .= "<tr><td>ID da transação:</td><td> <b> " . $tid . "</b></td></tr>";
+        if (isset($info["pan"])) {
+            $html .= "<tr><td class='key'>PAN:</td><td> <b> " . $info["pan"] . "</b></td></tr>";
+        }
+        if (isset($info["forma-pagamento"])) {
+            $html .= "<tr><td colspan='2' class='key'><h4>Forma de pagamento</h4><hr/></td></tr>";
+            $html .= "<tr><td class='key'>Bandeira:</td><td> <b> " . ucfirst($info["forma-pagamento"]["bandeira"]) . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Parcelas:</td><td> <b> " . $info["forma-pagamento"]["parcelas"] . "</b></td></tr>";
+        }
+        if (isset($info["autenticacao"])) {
+            $html .= "<tr><td colspan='2' class='key'><h4>Autenticação</h4><hr/></td></tr>";
+            $html .= "<tr><td class='key'>Código:</td><td> <b> " . $info["autenticacao"]["codigo"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Mensagem:</td><td> <b> " . $info["autenticacao"]["mensagem"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Horário:</td><td> <b> " . date("d/m/Y H:i:s", strtotime($info["autenticacao"]["data-hora"])) . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Valor:</td><td> <b> " . $info["autenticacao"]["valor"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>ECI:</td><td> <b> " . $info["autenticacao"]["eci"] . "</b></td></tr>";
+        }
+        if (isset($info["autorizacao"])) {
+            $html .= "<tr><td colspan='2' class='key'><h4>Autorização</h4><hr/></td></tr>";
+            $html .= "<tr><td class='key'>Código:</td><td> <b> " . $info["autorizacao"]["codigo"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Mensagem:</td><td> <b> " . $info["autorizacao"]["mensagem"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Horário:</td><td> <b> " . date("d/m/Y H:i:s", strtotime($info["autorizacao"]["data-hora"])) . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Valor:</td><td> <b> " . $info["autorizacao"]["valor"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>LR:</td><td> <b> " . $info["autorizacao"]["lr"] . " - " . $this->lr[$info["autorizacao"]["lr"]] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>ARP:</td><td> <b> " . $info["autorizacao"]["arp"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>NSU:</td><td> <b> " . $info["autorizacao"]["nsu"] . "</b></td></tr>";
+        }
+        if (isset($info["captura"])) {
+            $html .= "<tr><td colspan='2' class='key'><h4>Captura</h4><hr/></td></tr>";
+            $html .= "<tr><td class='key'>Código:</td><td> <b> " . $info["captura"]["codigo"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Mensagem:</td><td> <b> " . $info["captura"]["mensagem"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Horário:</td><td> <b> " . date("d/m/Y H:i:s", strtotime($info["captura"]["data-hora"])) . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Valor:</td><td> <b> " . $info["captura"]["valor"] . "</b></td></tr>";
+        }
+        if (isset($info["cancelamento"])) {
+            $html .= "<tr><td colspan='2' class='key'><h4>Cancelamento</h4><hr/></td></tr>";
+            $html .= "<tr><td class='key'>Código:</td><td> <b> " . $info["cancelamento"]["codigo"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Mensagem:</td><td> <b> " . $info["cancelamento"]["mensagem"] . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Horário:</td><td> <b> " . date("d/m/Y H:i:s", strtotime($info["cancelamento"]["data-hora"])) . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Valor:</td><td> <b> " . $info["cancelamento"]["valor"] . "</b></td></tr>";
+        }
         $html .= '</table>' . "\n";
         return $html;
     }
@@ -623,7 +718,7 @@ class plgVmPaymentCielo extends vmPSPlugin {
         $virtuemart_paymentmethod_id = JRequest::getInt('pm', '');
         $modelOrder = VmModel::getModel('orders');
         $document = JFactory::getDocument();
-        
+
         if (empty($order_number) or empty($virtuemart_paymentmethod_id) or !$this->selectedThisByMethodId($virtuemart_paymentmethod_id)) {
             return NULL;
         }
@@ -634,14 +729,14 @@ class plgVmPaymentCielo extends vmPSPlugin {
         if (!($paymentTable = $this->getDataByOrderId($virtuemart_order_id))) {
             return NULL;
         }
-        
+
         if(JRequest::getBool('restart')){
             $order = $modelOrder->getOrder($virtuemart_order_id);
             $link = $this->getUrlAutenticacao($order);
             $document->addScriptDeclaration("location.href='{$link}'");
             return false;
         }
-        
+
 
         $method = $this->getPluginParams();
 
@@ -659,9 +754,9 @@ class plgVmPaymentCielo extends vmPSPlugin {
         $xml = $this->curl_xml($xml);
         $sucesso = false;
         $mensagem = "";
-        
+
         $order = array();
-        
+
         $retryLink = JRoute::_("index.php?option=com_virtuemart&view=pluginresponse&task=pluginnotification&order={$order_number}&pm={$virtuemart_paymentmethod_id}&restart=1", true, $cart->useSSL);
 
         //@TODO Atualizar o status da requisição da CIELO e persistir no banco de dados (internalData)
