@@ -319,14 +319,35 @@ class plgVmPaymentCielo extends vmPSPlugin {
         }
         $this->getPaymentCurrency($paymentTable);
 
-        $params = $this->getPluginParams();
+        $method = $this->getPluginParams();
         $tid = $paymentTable->tid;
+
+        if (JRequest::getString('cielo_action', '') == "cancelar") {
+            $xml = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>
+<requisicao-cancelamento id=\"4\" versao=\"1.1.1\">
+<tid>$tid</tid>
+<dados-ec>
+<numero>{$method->Codigo}</numero>
+<chave>{$method->Chave}</chave>
+</dados-ec>
+</requisicao-cancelamento>";
+            $info = $this->curl_xml($xml);
+            $modelOrder = VmModel::getModel('orders');
+            $order = $modelOrder->getOrder($virtuemart_order_id);
+            $order['customer_notified'] = 1;
+            $order['order_status'] = $method->StatusNaoAutorizado;
+            $order['comments'] = "Transação cancelada pelo administrador da loja";
+            $modelOrder->updateStatusForOneOrder($virtuemart_order_id, $order, TRUE);
+            $app = JFactory::getApplication();
+            return $app->redirect(JRoute::_('index.php?option=com_virtuemart&view=orders&task=edit&virtuemart_order_id=' . $virtuemart_order_id, true), "Transação cancelada");
+        }
+
         $xml = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>
 <requisicao-consulta id=\"5\" versao=\"1.1.1\">
 <tid>{$tid}</tid>
 <dados-ec>
-<numero>{$params->Codigo}</numero>
-<chave>{$params->Chave}</chave>
+<numero>{$method->Codigo}</numero>
+<chave>{$method->Chave}</chave>
 </dados-ec>
 </requisicao-consulta>";
         $info = $this->curl_xml($xml);
@@ -339,9 +360,19 @@ class plgVmPaymentCielo extends vmPSPlugin {
         if (isset($info["pan"])) {
             $html .= "<tr><td class='key'>PAN:</td><td> <b> " . $info["pan"] . "</b></td></tr>";
         }
+
+        $linkCancelar = JRoute::_('index.php?option=com_virtuemart&view=orders&task=edit&virtuemart_order_id=' . $virtuemart_order_id . '&cielo_action=cancelar', true);
+
+        //@TODO exibir o cancelar somente quando o status for aprovado
+        $html .= "<tr><td colspan='2' class='key'><h4>Cancelar transação</h4><hr/></td></tr>";
+        $html .= "<tr><td style='background-color: #c10303; color: #FFF; padding:10px; font-size:14px;' colspan='2' >" .
+                "Para cancelar esta transação, " .
+                "<button><a class='btn' href='{$linkCancelar}' onclick='return confirm(\"Atenção, esta ação não pode ser desfeita. Continuar?\")'>clique aqui</a></button>" .
+                "</td></tr>";
+
         if (isset($info["forma-pagamento"])) {
             $html .= "<tr><td colspan='2' class='key'><h4>Forma de pagamento</h4><hr/></td></tr>";
-            $html .= "<tr><td class='key'>Bandeira:</td><td> <img width='80' src='{$this->imgBandeira[$info["forma-pagamento"]["bandeira"]]}' alt='".ucfirst($info["forma-pagamento"]["bandeira"])."' /><br/> <b> " . ucfirst($info["forma-pagamento"]["bandeira"]) . "</b></td></tr>";
+            $html .= "<tr><td class='key'>Bandeira:</td><td> <img width='80' src='{$this->imgBandeira[$info["forma-pagamento"]["bandeira"]]}' alt='" . ucfirst($info["forma-pagamento"]["bandeira"]) . "' /><br/> <b> " . ucfirst($info["forma-pagamento"]["bandeira"]) . "</b></td></tr>";
             $html .= "<tr><td class='key'>Parcelas:</td><td> <b> " . $info["forma-pagamento"]["parcelas"] . "</b></td></tr>";
         }
         if (isset($info["autenticacao"])) {

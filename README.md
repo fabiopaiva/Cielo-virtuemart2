@@ -15,8 +15,6 @@ Cielo Virtuemart 2 é um plugin desenvolvido para Virtuemart 2 que fornece o gat
 ## Funcionalidades Pendentes
 
 * Captura não automática (Somente captura automática foi implementada)
-* Autorizações (Somente Autorizar sem passar por autenticação implementado)
-* Cancelamento da transação
 
 ## Autor
 

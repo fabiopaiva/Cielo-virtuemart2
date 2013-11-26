@@ -5,7 +5,7 @@
     <author>Fábio Paiva</author>
     <authorUrl>http://www.fabiopaiva.me</authorUrl>
     <license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
-    <version>1.1.1</version>
+    <version>1.2.0</version>
     <description>Pagamento via Cielo</description>
     <files>
         <filename plugin="cielo">cielo.php</filename>
@@ -46,7 +46,7 @@
             <option value="1">Sim</option>
             <option disabled="true" value="0">Não</option>
         </param>
-        <param name="Autorizar" type="list" default="3" label="Autorização" description="Somente Autorizar sem passar por autenticação implementado">
+        <param name="Autorizar" type="list" default="3" label="Autorização">
             <option value="3" selected="selected">Autorizar sem passar por autenticação – válido somente para crédito</option>
             <option value="2">Autorizar autenticada e não-autenticada</option>
             <option value="1">Autorizar somente se autenticada</option>
