@@ -1,3 +1,7 @@
+# Abandonado
+
+Este projeto está abandonado, use por sua conta e risco.
+
 # Cielo Virtuemart 2
 Cielo Virtuemart 2 é um plugin desenvolvido para Virtuemart 2 que fornece o gateway de pagamento para clientes que possuem convênio com a Cielo
 
